@@ -1,3 +1,6 @@
+
+
+
 """
 Solara-based visualization.
 """
@@ -9,6 +12,8 @@ from mesa.visualization import (
     make_space_component,
 )
 from model import Model
+import solara
+import altair as alt
 
 
 def pd_agent_portrayal(agent):
@@ -20,6 +25,40 @@ def pd_agent_portrayal(agent):
         "marker": "s",  # square marker
         "size": 25,
     }
+
+def AltairLinePlotWrapper(model):
+    @solara.component
+    def AltairLinePlot():
+        df = model.datacollector.get_model_vars_dataframe()
+        df = df.reset_index()
+        if df.columns[0] != "Step":
+            df = df.rename(columns={df.columns[0]: "Step"})
+
+        if df.empty or "All_Agents" not in df.columns:
+            return solara.Text("Waiting for simulation data...")
+
+        melted_df = df.melt(
+            id_vars=["Step"],
+            value_vars=["All_Agents", "Cooperating_Agents"],
+            var_name="Metric",
+            value_name="Count"
+        )
+
+        chart = alt.Chart(melted_df).mark_line(point=True).encode(
+            x=alt.X("Step:Q", title="Step"),
+            y=alt.Y("Count:Q", title="Population"),
+            color=alt.Color("Metric:N", title="Metric"),
+            tooltip=["Step", "Metric", "Count"]
+        ).properties(
+            width=600,
+            height=300,
+            title="Population Dynamics Over Time"
+        ).interactive()
+
+        from solara.components.figure_altair import FigureAltair
+        return FigureAltair(chart)
+
+    return AltairLinePlot()
 
 
 # Model parameters
@@ -62,11 +101,15 @@ plot_component = make_plot_component("Cooperating_Agents")
 # Initialize model
 initial_model = Model()
 
+
 # Create visualization with all components
 page = SolaraViz(
     model=initial_model,
-    components=[plot_all, plot_component],
+    components=[
+        lambda model: AltairLinePlotWrapper(model),
+    ],
     model_params=model_params,
-    name="Spatial Prisoner's Dilemma",
+    name="Greenbeards Simulations",
 )
+
 page  # noqa B018

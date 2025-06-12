@@ -73,6 +73,7 @@ class Model(MesaModel):
             self.opponents[agent2] = agent1
 
     def step(self):
+        self.match_agents()
         # Activate all agents, based on the activation regime
         match self.activation_order:
             case "Sequential":
@@ -91,7 +92,6 @@ class Model(MesaModel):
     def run(self, n):
         """Run the model for n steps."""
         for _ in range(n):
-            self.match_agents()
             self.step()
 
     def num_agents(self):
@@ -99,10 +99,23 @@ class Model(MesaModel):
         return len(self.agents)
 
     def num_cooperating_agents(self):
-        """Returns the number of cooperating agents in the model."""
-        if len(self.agents) == 0 or type(self.agents[0]) != SimpleAgent:
+        """Returns the number of cooperating agents in the model based on stage."""
+        if not self.agents:
             return 0
-        return len([a for a in self.agents if a.action == "C"])
+
+        first_agent = self.agents[0]
+
+        if isinstance(first_agent, SimpleAgent):
+            return len([a for a in self.agents if a.action == "C"])
+
+        elif isinstance(first_agent, BeardAgent):
+            return len([a for a in self.agents if a.is_beard_altruistic])
+
+        elif isinstance(first_agent, ReputationAgent):
+            return len([a for a in self.agents if not a.impostor])
+
+        else:
+            return 0
 
     def num_bearded_agents(self):
         """Returns the number of bearded agents in the model."""

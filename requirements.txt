@@ -3,3 +3,4 @@ solara
 networkx
 mesa[rec]
 matplotlib
+altair
