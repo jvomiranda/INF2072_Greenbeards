@@ -111,10 +111,6 @@ class Model(MesaModel):
         # Collect data
         self.datacollector.collect(self)
 
-        all_data = self.datacollector.get_model_vars_dataframe()
-        if not all_data.empty:
-            all_data.to_csv(self.filename)
-
     def run(self, n):
         """Run the model for n steps."""
         for _ in range(n):
@@ -143,7 +139,6 @@ class Model(MesaModel):
 
         else:
             return 0
-
 
     # Relevant for stage 2 and 3
     def num_impostors(self):

@@ -23,6 +23,9 @@ for seed in tqdm(range(100)):
     model_params["child_cost"] = 1
     model = Model(**model_params)
     model.run(20)
+    data = model.datacollector.get_model_vars_dataframe()
+    if not data.empty:
+        data.to_csv(model.filename)
 
 print("Generating data for stage 2 agents")
 for seed in tqdm(range(100)):
@@ -31,6 +34,9 @@ for seed in tqdm(range(100)):
     model_params["child_cost"] = 3
     model = Model(**model_params)
     model.run(20)
+    data = model.datacollector.get_model_vars_dataframe()
+    if not data.empty:
+        data.to_csv(model.filename)
 
 print("Generating data for stage 3 agents")
 for seed in tqdm(range(100)):
@@ -39,6 +45,9 @@ for seed in tqdm(range(100)):
     model_params["child_cost"] = 1
     model = Model(**model_params)
     model.run(20)
+    data = model.datacollector.get_model_vars_dataframe()
+    if not data.empty:
+        data.to_csv(model.filename)
 
 print("Generating data for stage 4 agents")
 for seed in tqdm(range(100)):
@@ -47,3 +56,6 @@ for seed in tqdm(range(100)):
     model_params["child_cost"] = 1
     model = Model(**model_params)
     model.run(20)
+    data = model.datacollector.get_model_vars_dataframe()
+    if not data.empty:
+        data.to_csv(model.filename)
