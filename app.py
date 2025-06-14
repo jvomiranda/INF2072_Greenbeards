@@ -34,8 +34,9 @@ def AltairLinePlotWrapper(model):
         if df.empty or "All_Agents" not in df.columns:
             return solara.Text("Waiting for simulation data...")
 
+        all_zeros_col_reputation = (df["Average Reputation"] == 0).all()
 
-        if not df["Average Reputation"].empty:
+        if not all_zeros_col_reputation:
             melted_df = df.melt(
                 id_vars=["Step"],
                 value_vars=["All_Agents"],
