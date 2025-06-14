@@ -1,6 +1,3 @@
-
-
-
 """
 Solara-based visualization.
 """
@@ -68,7 +65,7 @@ model_params = {
         "value": 42,
         "label": "Random Seed",
     },
-    "initial_pop": Slider("Initial Population Size", value=50, min=10, max=100, step=1),
+    "initial_pop": Slider("Initial Population Size", value=100, min=10, max=100, step=1),
     "activation_order": {
         "type": "Select",
         "value": "Simultaneous",
@@ -88,6 +85,13 @@ model_params = {
         "values": Model.simulation_stages,
         "label": "Stage",
     },
+    "child_cost": Slider(
+        "Child Cost",
+        value=1,
+        min=0.25,
+        max=4,
+        step=0.25,
+    ),
 }
 
 

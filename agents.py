@@ -34,8 +34,8 @@ class BaseAgent(Agent):
         my_action, opponent_action = self.get_actions(opponent)
 
         # Cache opponent score and return agent score
-        opponent.score = self.model.payoff[(opponent_action, my_action)]
-        return self.model.payoff[(my_action, opponent_action)]
+        opponent.score = self.model.get_payoff(opponent_action, my_action)
+        return self.model.get_payoff(my_action, opponent_action)
 
     def get_actions(self, opponent):
         """Determine the actions of the agent and its opponent."""
