@@ -34,23 +34,65 @@ def AltairLinePlotWrapper(model):
         if df.empty or "All_Agents" not in df.columns:
             return solara.Text("Waiting for simulation data...")
 
-        melted_df = df.melt(
-            id_vars=["Step"],
-            value_vars=["All_Agents", "Cooperating_Agents"],
-            var_name="Metric",
-            value_name="Count"
-        )
 
-        chart = alt.Chart(melted_df).mark_line(point=True).encode(
-            x=alt.X("Step:Q", title="Step"),
-            y=alt.Y("Count:Q", title="Population"),
-            color=alt.Color("Metric:N", title="Metric"),
-            tooltip=["Step", "Metric", "Count"]
-        ).properties(
-            width=600,
-            height=300,
-            title="Population Dynamics Over Time"
-        ).interactive()
+        if not df["Average Reputation"].empty:
+            melted_df = df.melt(
+                id_vars=["Step"],
+                value_vars=["All_Agents"],
+                var_name="Metric",
+                value_name="Count"
+                )
+
+            melted_df2 = df.melt(
+                id_vars=["Step"],
+                value_vars=["Average Reputation", "Average Trust"],
+                var_name="Metric",
+                value_name="Count"
+                )
+            
+            chart1 = alt.Chart(melted_df).mark_line().encode(
+
+                x=alt.X("Step:Q", title="Step"),
+                y=alt.Y("Count:Q", title="Population"),
+                color=alt.Color("Metric:N", title="Metric"),
+                tooltip=["Step", "Count"]
+                ).properties(
+                    width=600,
+                    height=300,
+                    title="Population Over Time")
+
+            chart2 = alt.Chart(melted_df2).mark_bar().encode(
+
+                x=alt.X("Step:Q", title="Step"),
+                y=alt.Y("Count:Q", title="Population"),
+                color=alt.Color("Metric:N", title="Metric").scale(scheme="lighttealblue-3"),
+                tooltip=["Step", "Count"]
+            ).properties(
+                width=600,
+                height=300,
+                title="Reputation and Trust Dynamics"
+            )
+            chart = chart1 + chart2
+
+        else:
+            melted_df = df.melt(
+                id_vars=["Step"],
+                value_vars=["All_Agents", "Cooperating_Agents"],
+                var_name="Metric",
+                value_name="Count"
+            )
+
+            chart = alt.Chart(melted_df).mark_line(point=True).encode(
+
+                x=alt.X("Step:Q", title="Step"),
+                y=alt.Y("Count:Q", title="Population"),
+                color=alt.Color("Metric:N", title="Metric"),
+                tooltip=["Step", "Metric", "Count"]
+            ).properties(
+                width=600,
+                height=300,
+                title="Population Dynamics Over Time"
+            )
 
         from solara.components.figure_altair import FigureAltair
         return FigureAltair(chart)
