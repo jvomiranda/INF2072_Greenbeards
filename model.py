@@ -36,6 +36,7 @@ class Model(MesaModel):
         # Create agents based on the stage and distribution
         self.create_agents(initial_pop, stage, distribution)
 
+
         # Defines metrics to graph
         self.datacollector = DataCollector(
             {
@@ -51,6 +52,12 @@ class Model(MesaModel):
                 # Relevant for stage 4
                 "Average Reputation": self.avg_reputation,
                 "Average Trust": self.avg_trust,
+                "Cooperate_Actions": self.count_cooperate_actions,
+                "Defect_Actions": self.count_defect_actions,
+                "Impostor Reputation": self.avg_rep_impostors,
+                "Impostor Trust": self.avg_trust_impostors,
+                "Altruist Reputation": self.avg_rep_altruists,
+                "Altruist Trust": self.avg_trust_altruists
             }
         )
 
@@ -177,3 +184,57 @@ class Model(MesaModel):
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
         return sum(a.trust for a in self.agents) / len(self.agents)
+
+    def count_cooperate_actions(self):
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+        return sum(1 for a in self.agents if getattr(a, "last_action", None) == "C")
+
+    def count_defect_actions(self):
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+        return sum(1 for a in self.agents if getattr(a, "last_action", None) == "D")
+
+    def avg_trust_impostors(self):
+        """Returns the average trust of impostor agents in the model."""
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+
+        impostors = [a for a in self.agents if a.impostor]
+        if not impostors:
+            return 0
+
+        return sum(a.trust for a in impostors) / len(impostors)
+
+    def avg_trust_altruists(self):
+        """Returns the average trust of impostor agents in the model."""
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+
+        altruists = [a for a in self.agents if not a.impostor]
+        if not altruists:
+            return 0
+
+        return sum(a.trust for a in altruists) / len(altruists)
+
+    def avg_rep_impostors(self):
+        """Returns the average trust of impostor agents in the model."""
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+
+        impostors = [a for a in self.agents if a.impostor]
+        if not impostors:
+            return 0
+
+        return sum(a.reputation for a in impostors) / len(impostors)
+
+    def avg_rep_altruists(self):
+        """Returns the average trust of impostor agents in the model."""
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+
+        altruists = [a for a in self.agents if not a.impostor]
+        if not altruists:
+            return 0
+
+        return sum(a.reputation for a in altruists) / len(altruists)

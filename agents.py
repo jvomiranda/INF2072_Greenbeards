@@ -124,20 +124,28 @@ class ReputationAgent(BaseAgent):
     def advance(self):
         score = self.get_payoff()
         if self.impostor:
-            self.reputation -= 1
+            if self.reputation != 0:
+                self.reputation -= 1
+            else:
+                pass
         else:
             self.reputation += 1
         if score < 1:
-            self.trust -= 1
+            if self.trust != 0:
+                self.trust -= 1
+            else:
+                pass
 
     def get_actions(self, opponent):
-        if (not self.impostor) and (self.trust > opponent.reputation):
+        if (not self.impostor) and (self.trust >= opponent.reputation):
             agent_action = "C"
         else:
             agent_action = "D"
-        if (not opponent.impostor) and (opponent.trust > self.reputation):
+        if (not opponent.impostor) and (opponent.trust >= self.reputation):
             opponent_action = "C"
         else:
             opponent_action = "D"
 
+        self.last_action = agent_action
+        opponent.last_action = opponent_action
         return agent_action, opponent_action

@@ -26,6 +26,10 @@ def pd_agent_portrayal(agent):
 def AltairLinePlotWrapper(model):
     @solara.component
     def AltairLinePlot():
+        import altair as alt
+        import solara
+        from solara.components.figure_altair import FigureAltair
+
         df = model.datacollector.get_model_vars_dataframe()
         df = df.reset_index()
         if df.columns[0] != "Step":
@@ -35,45 +39,114 @@ def AltairLinePlotWrapper(model):
             return solara.Text("Waiting for simulation data...")
 
         all_zeros_col_reputation = (df["Average Reputation"] == 0).all()
+        all_zeros_col_impostors = (df["Impostors"] == 0).all()
 
         if not all_zeros_col_reputation:
+            # Melt population metrics
             melted_df = df.melt(
                 id_vars=["Step"],
                 value_vars=["All_Agents"],
                 var_name="Metric",
                 value_name="Count"
-                )
+            )
 
+            # Melt reputation/trust metrics
             melted_df2 = df.melt(
                 id_vars=["Step"],
-                value_vars=["Average Reputation", "Average Trust"],
+                value_vars=["Average Reputation", "Average Trust", "Impostor Reputation", "Impostor Trust",
+                            "Altruist Reputation", "Altruist Trust"],
                 var_name="Metric",
-                value_name="Count"
+                value_name="Value"
+            )
+            if "Cooperate_Actions" in df.columns and "Defect_Actions" in df.columns:
+                melted_df_actions = df.melt(
+                    id_vars=["Step"],
+                    value_vars=["Cooperate_Actions", "Defect_Actions"],
+                    var_name="Action",
+                    value_name="Count"
                 )
-            
-            chart1 = alt.Chart(melted_df).mark_line().encode(
-
+            # Line chart: population
+            chart1 = alt.Chart(melted_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population"),
-                color=alt.Color("Metric:N", title="Metric"),
-                tooltip=["Step", "Count"]
-                ).properties(
-                    width=600,
-                    height=300,
-                    title="Population Over Time")
+                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='dark2')),
+                tooltip=["Step", "Metric", "Count"]
+            ).properties(
+                width=600,
+                height=300,
+                title="Population Over Time"
+            )
 
-            chart2 = alt.Chart(melted_df2).mark_area().encode(
-
+            # Line chart: reputation/trust
+            chart2 = alt.Chart(melted_df2).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
-                y=alt.Y("Count:Q", title="Population"),
-                color=alt.Color("Metric:N", title="Metric"), #.scale(scheme="lighttealblue-3"),
-                tooltip=["Step", "Count"]
+                y=alt.Y("Value:Q", title="Score"),
+                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='set2')),
+                tooltip=["Step", "Metric", "Value"]
             ).properties(
                 width=600,
                 height=300,
                 title="Reputation and Trust Dynamics"
             )
-            chart = chart2 + chart1
+
+            chart3 = alt.Chart(melted_df_actions).mark_line(point=True).encode(
+                x=alt.X("Step:Q", title="Step"),
+                y=alt.Y("Count:Q", title="Number of Actions"),
+                color=alt.Color("Action:N", title="Action", scale=alt.Scale(scheme='dark2')),
+                tooltip=["Step", "Action", "Count"]
+            ).properties(
+                width=600,
+                height=300,
+                title="Number of Cooperation and Defection Actions Over Time"
+            )
+            # Concatenate with independent Y axes
+            with solara.Column():
+                solara.FigureAltair(chart1)
+                solara.FigureAltair(chart2)
+                if chart3:
+                    solara.FigureAltair(chart3)
+
+        elif all_zeros_col_reputation and not all_zeros_col_impostors:
+            melted_df = df.melt(
+                id_vars=["Step"],
+                value_vars=["All_Agents", "Cooperating_Agents"],
+                var_name="Metric",
+                value_name="Count"
+            )
+
+
+            melted_df2 = df.melt(
+                id_vars=["Step"],
+                value_vars=["Impostors", "Cowards", "True Beards", "Suckers"],
+                var_name="Metric",
+                value_name="Count"
+            )
+
+            chart1 = alt.Chart(melted_df).mark_line(point=True).encode(
+                x=alt.X("Step:Q", title="Step"),
+                y=alt.Y("Count:Q", title="Population"),
+                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='category10')),
+                tooltip=["Step", "Metric", "Count"]
+            ).properties(
+                width=600,
+                height=300,
+                title="Population Dynamics Over Time"
+            )
+
+            chart2 = alt.Chart(melted_df2).mark_line(point=True).encode(
+                x=alt.X("Step:Q", title="Step"),
+                y=alt.Y("Count:Q", title="Population"),
+                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='category10')),
+                tooltip=["Step", "Metric", "Count"]
+            ).properties(
+                width=600,
+                height=300,
+                title="Classes and Trust Dynamics"
+            ).interactive()
+
+            with solara.Column():
+                solara.FigureAltair(chart1)
+                solara.FigureAltair(chart2)
 
         else:
             melted_df = df.melt(
@@ -84,10 +157,9 @@ def AltairLinePlotWrapper(model):
             )
 
             chart = alt.Chart(melted_df).mark_line(point=True).encode(
-
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population"),
-                color=alt.Color("Metric:N", title="Metric"),
+                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='category10')),
                 tooltip=["Step", "Metric", "Count"]
             ).properties(
                 width=600,
@@ -95,10 +167,10 @@ def AltairLinePlotWrapper(model):
                 title="Population Dynamics Over Time"
             )
 
-        from solara.components.figure_altair import FigureAltair
-        return FigureAltair(chart)
+            return FigureAltair(chart)
 
     return AltairLinePlot()
+
 
 
 # Model parameters
