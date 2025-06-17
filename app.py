@@ -58,6 +58,19 @@ def AltairLinePlotWrapper(model):
                 var_name="Metric",
                 value_name="Value"
             )
+            color_scale_chart2 = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
+                domain=[
+                    "Impostor Reputation", "Impostor Trust",
+                    "Altruist Reputation", "Altruist Trust",
+                    "Average Reputation", "Average Trust"
+                ],
+                range=[
+                    "red", "orange",  # impostors
+                    "green", "lightgreen",  # greenbeards
+                    "blue", "lightblue"  # others
+                ]
+            ))
+
             if "Cooperate_Actions" in df.columns and "Defect_Actions" in df.columns:
                 melted_df_actions = df.melt(
                     id_vars=["Step"],
@@ -66,9 +79,9 @@ def AltairLinePlotWrapper(model):
                     value_name="Count"
                 )
             # Line chart: population
-            chart1 = alt.Chart(melted_df).mark_line(point=True).encode(
+            chart1 = alt.Chart(melted_df).mark_line(point=False).encode(
                 x=alt.X("Step:Q", title="Step"),
-                y=alt.Y("Count:Q", title="Population"),
+                y=alt.Y("Count:Q", title="Population", scale=alt.Scale(domain=[0, 200])),
                 color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='dark2')),
                 tooltip=["Step", "Metric", "Count"]
             ).properties(
@@ -81,7 +94,7 @@ def AltairLinePlotWrapper(model):
             chart2 = alt.Chart(melted_df2).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Value:Q", title="Score"),
-                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='set2')),
+                color=color_scale_chart2,
                 tooltip=["Step", "Metric", "Value"]
             ).properties(
                 width=600,
@@ -89,10 +102,15 @@ def AltairLinePlotWrapper(model):
                 title="Reputation and Trust Dynamics"
             )
 
+            color_scale_chart3 = alt.Color("Action:N", title="Action", scale=alt.Scale(
+                domain=["Cooperate_Actions", "Defect_Actions"],
+                range=["green", "red"]
+            ))
+
             chart3 = alt.Chart(melted_df_actions).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Number of Actions"),
-                color=alt.Color("Action:N", title="Action", scale=alt.Scale(scheme='dark2')),
+                color=color_scale_chart3,
                 tooltip=["Step", "Action", "Count"]
             ).properties(
                 width=600,
@@ -121,6 +139,10 @@ def AltairLinePlotWrapper(model):
                 var_name="Metric",
                 value_name="Count"
             )
+            color_scale_chart2b = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
+                domain=["Impostors", "True Beards", "Cowards", "Suckers"],
+                range=["red", "green", "yellow", "blue"]
+            ))
 
             chart1 = alt.Chart(melted_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
@@ -136,7 +158,7 @@ def AltairLinePlotWrapper(model):
             chart2 = alt.Chart(melted_df2).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population"),
-                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='category10')),
+                color=color_scale_chart2b,
                 tooltip=["Step", "Metric", "Count"]
             ).properties(
                 width=600,
@@ -149,9 +171,14 @@ def AltairLinePlotWrapper(model):
                 solara.FigureAltair(chart2)
 
         else:
+
+            color_scale_chart = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
+                domain=["All_Agents", "Cooperating_Agents", "Non-Cooperating_Agents"],
+                range=["blue", "green", "red"]
+            ))
             melted_df = df.melt(
                 id_vars=["Step"],
-                value_vars=["All_Agents", "Cooperating_Agents"],
+                value_vars=["All_Agents", "Cooperating_Agents", "Non-Cooperating_Agents"],
                 var_name="Metric",
                 value_name="Count"
             )
@@ -159,7 +186,7 @@ def AltairLinePlotWrapper(model):
             chart = alt.Chart(melted_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population"),
-                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='category10')),
+                color=color_scale_chart,
                 tooltip=["Step", "Metric", "Count"]
             ).properties(
                 width=600,

@@ -44,6 +44,7 @@ class Model(MesaModel):
                 "All_Agents": self.num_agents,
                 # Relevant for stage 1
                 "Cooperating_Agents": self.num_cooperating_agents,
+                "Non-Cooperating_Agents": self.num_non_cooperating_agents,
                 # Relevant for stage 2 and 3
                 "Impostors": self.num_impostors,
                 "Cowards": self.num_cowards,
@@ -143,6 +144,25 @@ class Model(MesaModel):
 
         elif isinstance(first_agent, ReputationAgent):
             return len([a for a in self.agents if not a.impostor])
+
+        else:
+            return 0
+
+    def num_non_cooperating_agents(self):
+        """Returns the number of cooperating agents in the model based on stage."""
+        if not self.agents:
+            return 0
+
+        first_agent = self.agents[0]
+
+        if isinstance(first_agent, SimpleAgent):
+            return len([a for a in self.agents if a.action == "D"])
+
+        elif isinstance(first_agent, BeardAgent):
+            return len([a for a in self.agents if not a.is_beard_altruistic])
+
+        elif isinstance(first_agent, ReputationAgent):
+            return len([a for a in self.agents if a.impostor])
 
         else:
             return 0
