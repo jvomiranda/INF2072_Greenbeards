@@ -6,6 +6,7 @@ class BaseAgent(Agent):
     def __init__(self, model):
         super().__init__(model)
         self.score = None
+        self.default_score = 1
 
     def step(self):
         if self.model.activation_order != "Simultaneous":
@@ -16,13 +17,12 @@ class BaseAgent(Agent):
         self.create_children(payoff)
         self.die()
 
+    def get_opponent(self):
+        """Get the opponent of the agent."""
+        return self.model.opponents.get(self, None)
+
     def get_payoff(self):
         """Get the payoff for the agent based on its action and its opponent's action."""
-        opponent = self.model.opponents.get(self, None)
-        # If the agent has no opponent, return a default score
-        if opponent is None:
-            return 1
-        
         # If the opponent was processed, the payoff is cached
         # Clear cache and return score
         if self.score is not None:
@@ -30,11 +30,19 @@ class BaseAgent(Agent):
             self.score = None
             return score
 
+        opponent = self.get_opponent()
+        # If the agent has no opponent, return a default score
+        if opponent is None:
+            return self.default_score
+
         # Actions are deterministic on agent and opponent attributes
         my_action, opponent_action = self.get_actions(opponent)
 
         # Cache opponent score and return agent score
-        opponent.score = self.model.get_payoff(opponent_action, my_action)
+        opponent.score = opponent.get_payoff_from_actions(opponent_action, my_action)
+        return self.get_payoff_from_actions(my_action, opponent_action)
+
+    def get_payoff_from_actions(self, my_action, opponent_action):
         return self.model.get_payoff(my_action, opponent_action)
 
     def get_actions(self, opponent):
@@ -112,36 +120,45 @@ class BeardAgent(BaseAgent):
 
 class ReputationAgent(BaseAgent):
     """An agent that uses their trust level and opponent's reputation to decide actions."""
-    def __init__(self, model, impostor=None, trust=100, reputation=100):
+    def __init__(self, model, trust=None, reputation=50):
         super().__init__(model)
-        if impostor is None:
-            self.impostor = self.random.choice([True, False])
+        if reputation is None:
+            self.reputation = self.random.randint(0, 100)
         else:
-            self.impostor = impostor
-        self.reputation = reputation
-        self.trust = trust
+            self.reputation = reputation
+        
+        if trust is None:
+            self.trust = self.random.randint(0, 100)
+        else:
+            self.trust = trust
+
+        self.score = None
+        self.default_score = {'trust': 0, 'reputation': 0}
 
     def advance(self):
-        score = self.get_payoff()
-        if self.impostor:
-            if self.reputation != 0:
-                self.reputation -= 1
-            else:
-                pass
+        reputation_changes = self.get_payoff()
+        self.apply_score(reputation_changes)
+
+    def get_payoff_from_actions(self, my_action, opponent_action):
+        payoff = {'trust': 0, 'reputation': 0}
+        if my_action == "C":
+            payoff['reputation'] = 1
         else:
-            self.reputation += 1
-        if score < 1:
-            if self.trust != 0:
-                self.trust -= 1
-            else:
-                pass
+            payoff['reputation'] = -1
+
+        if opponent_action == "C":
+            payoff['trust'] = 1
+        else:
+            payoff['trust'] = -1
+        return payoff
 
     def get_actions(self, opponent):
-        if (not self.impostor) and (self.trust >= opponent.reputation):
+        if self.trust > opponent.reputation:
             agent_action = "C"
         else:
             agent_action = "D"
-        if (not opponent.impostor) and (opponent.trust >= self.reputation):
+
+        if opponent.trust > self.reputation:
             opponent_action = "C"
         else:
             opponent_action = "D"
@@ -149,3 +166,12 @@ class ReputationAgent(BaseAgent):
         self.last_action = agent_action
         opponent.last_action = opponent_action
         return agent_action, opponent_action
+
+    def apply_score(self, score):
+        """Apply the score to the agent's trust and reputation."""
+        self.trust += score['trust']
+        self.reputation += score['reputation']
+
+        # Ensure trust and reputation stay within bounds
+        self.trust = max(0, min(100, self.trust))
+        self.reputation = max(0, min(100, self.reputation))

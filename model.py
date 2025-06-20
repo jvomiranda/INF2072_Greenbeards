@@ -82,8 +82,9 @@ class Model(MesaModel):
                 BeardAgent.create_agents(model=self, n=int(initial_pop*0.25), has_beard=False, is_beard_altruistic=True)
                 BeardAgent.create_agents(model=self, n=int(initial_pop*0.25), has_beard=False, is_beard_altruistic=False)
             case "Reputation":
-                ReputationAgent.create_agents(model=self, n=int(initial_pop*distribution), impostor=True)
-                ReputationAgent.create_agents(model=self, n=int(initial_pop*(1-distribution)), impostor=False)
+                # ReputationAgent.create_agents(model=self, n=int(initial_pop*distribution), impostor=True)
+                # ReputationAgent.create_agents(model=self, n=int(initial_pop*(1-distribution)), impostor=False)
+                ReputationAgent.create_agents(model=self, n=initial_pop)
             case _:
                 raise ValueError(f"Unknown stage: {stage}")
 
@@ -143,7 +144,7 @@ class Model(MesaModel):
             return len([a for a in self.agents if a.is_beard_altruistic])
 
         elif isinstance(first_agent, ReputationAgent):
-            return len([a for a in self.agents if not a.impostor])
+            return len([a for a in self.agents if not a.reputation >= 50])
 
         else:
             return 0
@@ -162,7 +163,7 @@ class Model(MesaModel):
             return len([a for a in self.agents if not a.is_beard_altruistic])
 
         elif isinstance(first_agent, ReputationAgent):
-            return len([a for a in self.agents if a.impostor])
+            return len([a for a in self.agents if a.reputation < 50])
 
         else:
             return 0
@@ -220,7 +221,7 @@ class Model(MesaModel):
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
 
-        impostors = [a for a in self.agents if a.impostor]
+        impostors = [a for a in self.agents if a.reputation < 50]
         if not impostors:
             return 0
 
@@ -231,7 +232,7 @@ class Model(MesaModel):
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
 
-        altruists = [a for a in self.agents if not a.impostor]
+        altruists = [a for a in self.agents if a.reputation > 50]
         if not altruists:
             return 0
 
@@ -242,7 +243,7 @@ class Model(MesaModel):
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
 
-        impostors = [a for a in self.agents if a.impostor]
+        impostors = [a for a in self.agents if a.reputation < 50]
         if not impostors:
             return 0
 
@@ -253,7 +254,7 @@ class Model(MesaModel):
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
 
-        altruists = [a for a in self.agents if not a.impostor]
+        altruists = [a for a in self.agents if a.reputation > 50]
         if not altruists:
             return 0
 
