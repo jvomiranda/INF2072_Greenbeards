@@ -41,24 +41,26 @@ class Model(MesaModel):
         self.datacollector = DataCollector(
             {
                 # Always relevant
-                "All_Agents": self.num_agents,
+                "All Agents": self.num_agents,
                 # Relevant for stage 1
-                "Cooperating_Agents": self.num_cooperating_agents,
-                "Non-Cooperating_Agents": self.num_non_cooperating_agents,
+                "Cooperating Agents": self.num_cooperating_agents,
+                "Non-Cooperating Agents": self.num_non_cooperating_agents,
                 # Relevant for stage 2 and 3
                 "Impostors": self.num_impostors,
                 "Cowards": self.num_cowards,
                 "True Beards": self.num_true_beards,
                 "Suckers": self.num_suckers,
                 # Relevant for stage 4
+                "Outcast Agents": self.num_outcasts,
+                "Noble Agents": self.num_nobles,
                 "Average Reputation": self.avg_reputation,
                 "Average Trust": self.avg_trust,
-                "Cooperate_Actions": self.count_cooperate_actions,
-                "Defect_Actions": self.count_defect_actions,
-                "Impostor Reputation": self.avg_rep_impostors,
-                "Impostor Trust": self.avg_trust_impostors,
-                "Altruist Reputation": self.avg_rep_altruists,
-                "Altruist Trust": self.avg_trust_altruists
+                "Cooperate Actions": self.count_cooperate_actions,
+                "Defect Actions": self.count_defect_actions,
+                "Outcast Reputation": self.avg_rep_outcasts,
+                "Outcast Trust": self.avg_trust_outcasts,
+                "Noble Reputation": self.avg_rep_nobles,
+                "Noble Trust": self.avg_trust_nobles
             }
         )
 
@@ -194,6 +196,18 @@ class Model(MesaModel):
         return len([a for a in self.agents if not a.has_beard and a.is_beard_altruistic])
     
     # Relevant for stage 4
+    def num_outcasts(self):
+        """Returns the number of low reputation agents in the model."""
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+        return len([a for a in self.agents if a.reputation < 50])
+
+    def num_nobles(self):
+        """Returns the number of high reputation agents in the model."""
+        if not self.agents or type(self.agents[0]) != ReputationAgent:
+            return 0
+        return len([a for a in self.agents if a.reputation >= 50])
+
     def avg_reputation(self):
         """Returns the average reputation of agents in the model."""
         if not self.agents or type(self.agents[0]) != ReputationAgent:
@@ -216,7 +230,7 @@ class Model(MesaModel):
             return 0
         return sum(1 for a in self.agents if getattr(a, "last_action", None) == "D")
 
-    def avg_trust_impostors(self):
+    def avg_trust_outcasts(self):
         """Returns the average trust of impostor agents in the model."""
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
@@ -227,7 +241,7 @@ class Model(MesaModel):
 
         return sum(a.trust for a in impostors) / len(impostors)
 
-    def avg_trust_altruists(self):
+    def avg_trust_nobles(self):
         """Returns the average trust of impostor agents in the model."""
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
@@ -238,7 +252,7 @@ class Model(MesaModel):
 
         return sum(a.trust for a in altruists) / len(altruists)
 
-    def avg_rep_impostors(self):
+    def avg_rep_outcasts(self):
         """Returns the average trust of impostor agents in the model."""
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0
@@ -249,7 +263,7 @@ class Model(MesaModel):
 
         return sum(a.reputation for a in impostors) / len(impostors)
 
-    def avg_rep_altruists(self):
+    def avg_rep_nobles(self):
         """Returns the average trust of impostor agents in the model."""
         if not self.agents or type(self.agents[0]) != ReputationAgent:
             return 0

@@ -35,54 +35,62 @@ def AltairLinePlotWrapper(model):
         if df.columns[0] != "Step":
             df = df.rename(columns={df.columns[0]: "Step"})
 
-        if df.empty or "All_Agents" not in df.columns:
+        if df.empty or "All Agents" not in df.columns:
             return solara.Text("Waiting for simulation data...")
 
         all_zeros_col_reputation = (df["Average Reputation"] == 0).all()
         all_zeros_col_impostors = (df["Impostors"] == 0).all()
 
         if not all_zeros_col_reputation:
+            # Stage 4: Reputation and Trust Dynamics
+
             # Melt population metrics
-            melted_df = df.melt(
+            population_df = df.melt(
                 id_vars=["Step"],
-                value_vars=["All_Agents"],
+                value_vars=["All Agents", "Noble Agents", "Outcast Agents"],
                 var_name="Metric",
                 value_name="Count"
             )
-
-            # Melt reputation/trust metrics
-            melted_df2 = df.melt(
-                id_vars=["Step"],
-                value_vars=["Average Reputation", "Average Trust", "Impostor Reputation", "Impostor Trust",
-                            "Altruist Reputation", "Altruist Trust"],
-                var_name="Metric",
-                value_name="Value"
-            )
-            color_scale_chart2 = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
-                domain=[
-                    "Impostor Reputation", "Impostor Trust",
-                    "Altruist Reputation", "Altruist Trust",
-                    "Average Reputation", "Average Trust"
-                ],
+            population_colors = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
+                domain=["All Agents", "Noble Agents", "Outcast Agents"],
                 range=[
-                    "red", "orange",  # impostors
-                    "green", "lightgreen",  # greenbeards
-                    "blue", "lightblue"  # others
+                    "blue", "green", "red",
                 ]
             ))
 
-            if "Cooperate_Actions" in df.columns and "Defect_Actions" in df.columns:
-                melted_df_actions = df.melt(
+            # Melt reputation/trust metrics
+            reputation_df = df.melt(
+                id_vars=["Step"],
+                value_vars=["Average Reputation", "Average Trust", "Outcast Reputation", "Outcast Trust",
+                            "Noble Reputation", "Noble Trust"],
+                var_name="Metric",
+                value_name="Value"
+            )
+            reputation_colors = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
+                domain=[
+                    "Outcast Reputation", "Outcast Trust",
+                    "Noble Reputation", "Noble Trust",
+                    "Average Reputation", "Average Trust"
+                ],
+                range=[
+                    "red", "orange",  # outcasts (reputation < 50)
+                    "green", "lightgreen",  # nobles (reputation >= 50)
+                    "blue", "lightblue"  # others (population averages)
+                ]
+            ))
+
+            if "Cooperate Actions" in df.columns and "Defect Actions" in df.columns:
+                actions_df = df.melt(
                     id_vars=["Step"],
-                    value_vars=["Cooperate_Actions", "Defect_Actions"],
+                    value_vars=["Cooperate Actions", "Defect Actions"],
                     var_name="Action",
                     value_name="Count"
                 )
             # Line chart: population
-            chart1 = alt.Chart(melted_df).mark_line(point=False).encode(
+            population_chart = alt.Chart(population_df).mark_line(point=False).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population", scale=alt.Scale(domain=[0, 200])),
-                color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='dark2')),
+                color=population_colors,
                 tooltip=["Step", "Metric", "Count"]
             ).properties(
                 width=600,
@@ -91,10 +99,10 @@ def AltairLinePlotWrapper(model):
             )
 
             # Line chart: reputation/trust
-            chart2 = alt.Chart(melted_df2).mark_line(point=True).encode(
+            reputation_chart = alt.Chart(reputation_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Value:Q", title="Score"),
-                color=color_scale_chart2,
+                color=reputation_colors,
                 tooltip=["Step", "Metric", "Value"]
             ).properties(
                 width=600,
@@ -102,49 +110,55 @@ def AltairLinePlotWrapper(model):
                 title="Reputation and Trust Dynamics"
             )
 
-            color_scale_chart3 = alt.Color("Action:N", title="Action", scale=alt.Scale(
-                domain=["Cooperate_Actions", "Defect_Actions"],
-                range=["green", "red"]
+            interactions_colors = alt.Color("Action:N", title="Action", scale=alt.Scale(
+                domain=[
+                    "Cooperate Actions", "Defect Actions",
+                    # "CC Interactions", "CD Interactions", "DD Interactions"
+                    ],
+                range=[
+                    "green", "red",
+                    # "light green", "yellow", "orange"
+                    ]
             ))
 
-            chart3 = alt.Chart(melted_df_actions).mark_line(point=True).encode(
+            interactions_chart = alt.Chart(actions_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Number of Actions"),
-                color=color_scale_chart3,
+                color=interactions_colors,
                 tooltip=["Step", "Action", "Count"]
             ).properties(
                 width=600,
                 height=300,
-                title="Number of Cooperation and Defection Actions Over Time"
+                title="Interactions Over Time"
             )
             # Concatenate with independent Y axes
             with solara.Column():
-                solara.FigureAltair(chart1)
-                solara.FigureAltair(chart2)
-                if chart3:
-                    solara.FigureAltair(chart3)
+                solara.FigureAltair(population_chart)
+                solara.FigureAltair(reputation_chart)
+                if interactions_chart:
+                    solara.FigureAltair(interactions_chart)
 
-        elif all_zeros_col_reputation and not all_zeros_col_impostors:
-            melted_df = df.melt(
+        elif not all_zeros_col_impostors:
+            # Stage 2 & 3: Beard Dynamics
+            population_df = df.melt(
                 id_vars=["Step"],
-                value_vars=["All_Agents", "Cooperating_Agents"],
+                value_vars=["All Agents", "Cooperating Agents"],
                 var_name="Metric",
                 value_name="Count"
             )
 
-
-            melted_df2 = df.melt(
+            detailed_population_df = df.melt(
                 id_vars=["Step"],
                 value_vars=["Impostors", "Cowards", "True Beards", "Suckers"],
                 var_name="Metric",
                 value_name="Count"
             )
-            color_scale_chart2b = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
+            detailed_population_colors = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
                 domain=["Impostors", "True Beards", "Cowards", "Suckers"],
                 range=["red", "green", "yellow", "blue"]
             ))
 
-            chart1 = alt.Chart(melted_df).mark_line(point=True).encode(
+            population_chart = alt.Chart(population_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population"),
                 color=alt.Color("Metric:N", title="Metric", scale=alt.Scale(scheme='category10')),
@@ -155,10 +169,10 @@ def AltairLinePlotWrapper(model):
                 title="Population Dynamics Over Time"
             )
 
-            chart2 = alt.Chart(melted_df2).mark_line(point=True).encode(
+            detailed_population_chart = alt.Chart(detailed_population_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population"),
-                color=color_scale_chart2b,
+                color=detailed_population_colors,
                 tooltip=["Step", "Metric", "Count"]
             ).properties(
                 width=600,
@@ -167,26 +181,26 @@ def AltairLinePlotWrapper(model):
             ).interactive()
 
             with solara.Column():
-                solara.FigureAltair(chart1)
-                solara.FigureAltair(chart2)
+                solara.FigureAltair(population_chart)
+                solara.FigureAltair(detailed_population_chart)
 
         else:
-
-            color_scale_chart = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
-                domain=["All_Agents", "Cooperating_Agents", "Non-Cooperating_Agents"],
+            # Stage 1: Basic Population Dynamics
+            population_colors = alt.Color("Metric:N", title="Metric", scale=alt.Scale(
+                domain=["All Agents", "Cooperating Agents", "Non-Cooperating Agents"],
                 range=["blue", "green", "red"]
             ))
-            melted_df = df.melt(
+            population_df = df.melt(
                 id_vars=["Step"],
-                value_vars=["All_Agents", "Cooperating_Agents", "Non-Cooperating_Agents"],
+                value_vars=["All Agents", "Cooperating Agents", "Non-Cooperating Agents"],
                 var_name="Metric",
                 value_name="Count"
             )
 
-            chart = alt.Chart(melted_df).mark_line(point=True).encode(
+            population_chart = alt.Chart(population_df).mark_line(point=True).encode(
                 x=alt.X("Step:Q", title="Step"),
                 y=alt.Y("Count:Q", title="Population"),
-                color=color_scale_chart,
+                color=population_colors,
                 tooltip=["Step", "Metric", "Count"]
             ).properties(
                 width=600,
@@ -194,7 +208,7 @@ def AltairLinePlotWrapper(model):
                 title="Population Dynamics Over Time"
             )
 
-            return FigureAltair(chart)
+            return FigureAltair(population_chart)
 
     return AltairLinePlot()
 
@@ -241,8 +255,8 @@ model_params = {
 # grid_viz = make_space_component(agent_portrayal=pd_agent_portrayal)
 
 # TODO: Create more/better plots for tracking population dynamics
-plot_all = make_plot_component("All_Agents")
-plot_component = make_plot_component("Cooperating_Agents")
+plot_all = make_plot_component("All Agents")
+plot_component = make_plot_component("Cooperating Agents")
 
 # Initialize model
 initial_model = Model()
